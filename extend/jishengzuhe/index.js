@@ -8,7 +8,7 @@ function Parent(name) {
 }
 
 Parent.prototype.sayHi = function () {
-  console.log("Hi!")
+  console.log("Hi!");
 }
 
 function Child(name, age) {
