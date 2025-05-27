@@ -12,6 +12,22 @@ function shallowClone(obj) {
   return result;
 }
 
+function shallowClone1(obj) {
+  if (typeof obj !== 'object' || obj === null) return obj
+
+  const result = Array.isArray(obj) ? [] : {}
+
+  for (const key in obj) {
+    if (obj.hasOwnProperty(key)) {
+      result[key] = obj[key];
+    }
+  }
+
+  return result
+}
+
+
+
 const obj = {
   a: 1,
   b: 2,

@@ -34,7 +34,6 @@ function deepCopy(obj, hash = new WeakMap()) {
       result[key] = deepCopy(obj[key], hash);
     }
   }
-
   return result;
 }
 

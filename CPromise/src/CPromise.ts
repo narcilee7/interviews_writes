@@ -28,19 +28,23 @@ export class CPromise<T = any> {
     const resolve: Resolve<T> = (value) => {
       if (this.state !== PENDING) return;
       // 如果resolve是一个thenable，需要进入“递归展开”
-      resolvePromise(this, value, (_value) => {
-        queueMicrotask(() => {
-          this.state = FULFILLED;
-          this.value = _value as T;
-          this.onFulfilledCallbacks.forEach(cb => cb(_value as T));
+      resolvePromise(
+        this,
+        value,
+        (_value) => {
+          queueMicrotask(() => {
+            this.state = FULFILLED;
+            this.value = _value as T;
+            this.onFulfilledCallbacks.forEach(cb => cb(_value as T));
+          })
+        },
+        reason => {
+          queueMicrotask(() => {
+            this.state = REJECTED;
+            this.reason = reason;
+            this.onRejectedCallbacks.forEach(cb => cb(reason));
+          })
         })
-      }, reason => {
-        queueMicrotask(() => {
-          this.state = REJECTED;
-          this.reason = reason;
-          this.onRejectedCallbacks.forEach(cb => cb(reason));
-        })
-      })
     }
 
     const reject: Reject = (reason) => {
@@ -53,6 +57,7 @@ export class CPromise<T = any> {
     }
 
     try {
+      // 立即执行
       executor(resolve, reject);
     } catch (error) {
       reject(error);
@@ -63,7 +68,6 @@ export class CPromise<T = any> {
     if (value instanceof CPromise) {
       return value;
     }
-
     if (value && typeof (value as any).then === 'function') {
       return new CPromise((resolve, reject) => (value as PromiseLike<T>).then(resolve, reject));
     }
@@ -86,6 +90,7 @@ export class CPromise<T = any> {
           .then(
             val => {
               result[i] = val;
+              // 这样保证所有的都执行
               if (++completed === promises.length) resolve(result);
             },
             reject
@@ -225,7 +230,14 @@ export class CPromise<T = any> {
   }
 }
 
-
+/**
+ * 
+ * @param promise 
+ * @param x 
+ * @param resolve 
+ * @param reject 
+ * @returns 
+ */
 function resolvePromise<T>(
   promise: CPromise<T>,
   x: any,
@@ -233,14 +245,14 @@ function resolvePromise<T>(
   reject: Reject
 ) {
   if (promise === x) {
+    // 循环
     return reject(new TypeError("Chaining cycle detected"));
   }
-
   let called = false;
-
   if (x !== null && (typeof x === "object" || typeof x === "function")) {
     try {
       const then = x.then;
+      // thenable的
       if (typeof then === 'function') {
         then.call(
           x,
@@ -266,6 +278,7 @@ function resolvePromise<T>(
       reject(error);
     }
   } else {
+    // 基本数据类型直接resolve
     resolve(x);
   }
 }
